@@ -5,13 +5,17 @@ There is also option given to get transcript of interview in json file after int
 
 # Setup 
 first of all using in your environment install all required file using
-       pip install -r requirements.txt
+       
+       ```pip install -r requirements.txt
 Then create env from .env.example and load your api key
 # Get Started
 To run backend locally .Run the follwing command in folder directory
-       uvicorn backend.main:app --reload
+       
+       ```uvicorn backend.main:app --reload
+       
 To run Frontend locally .Run the follwing command
-        Stremlit run frontend/app.py
+       
+        ```Stremlit run frontend/app.py
 
 # Snippets
 
@@ -26,4 +30,5 @@ during interview
 Interview finished stage
 
 <img width="810" height="662" alt="image" src="https://github.com/user-attachments/assets/2cf6f6ac-b151-4a82-b8f0-4a469844c254" />
+
 
