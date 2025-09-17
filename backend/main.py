@@ -15,9 +15,9 @@ from db_operations import DatabaseOperations
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_database()
-    print("🚀 Database initialized successfully")
+    print("Database initialized successfully")
     yield
-    print("🚀 Database closed successfully")
+    print("Database closed successfully")
 
 app = FastAPI(title="Mock Interview API", version="1.0.0" , lifespan=lifespan)
 sessions = {}
@@ -26,26 +26,21 @@ class InterviewRequest(BaseModel):
     session_id: str = None
     user_input: str = None
 
-# Initialize the interview graph with graph approach
 interview_graph = Graph(nodes=(Interviewer,))
 
 @app.get("/interview/{session_id}")
 async def get_interview_state(session_id: str):
-    """Get current interview session state"""
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
     
     session = sessions[session_id]
     state = session["state"]
     
-    # Handle both Question and InterviewerResponse objects for last_output
     last_output = session["last_output"]
     if last_output:
         if hasattr(last_output, 'question'):
-            # InterviewerResponse object
             message = last_output.question if last_output.question else "Waiting for your response..."
         else:
-            # Question object (legacy)
             message = last_output.text if hasattr(last_output, 'text') else "Waiting for your response..."
     else:
         message = "Waiting for your response..."
@@ -68,34 +63,27 @@ async def get_interview_state(session_id: str):
 
 @app.post("/interview/")
 async def interview(req: InterviewRequest, db = Depends(get_db)):
-    """Single endpoint that handles the entire interview conversation using graph approach"""
     
-    # If no session_id provided, start new interview
     if not req.session_id:
         print("🔄 Starting new interview...")
         session_id = str(uuid.uuid4())
         state = State()  # Fresh state with no answers or feedback
-        print(f"📝 Created new session: {session_id}")
-        print(f"📊 Initial state - Answers: {len(state.user_answers)}, Feedback: {len(state.feedback_history)}")
+        print(f"Created new session: {session_id}")
+        print(f"Initial state - Answers: {len(state.user_answers)}, Feedback: {len(state.feedback_history)}")
         
-        # Start the interview with the Interviewer node
-        print("🤖 Running interviewer node...")
+        print("Running interviewer node...")
         result = await interview_graph.run(Interviewer(), state=state)
-        print(f"✅ Interviewer result: {result.output}")
+        print(f"Interviewer result: {result.output}")
         
-        # Extract the question from the response for compatibility
         if result.output.question:
             current_question = Question(text=result.output.question)
         else:
             current_question = Question(text="No question provided")
         
-        # Initialize database operations
         db_ops = DatabaseOperations(db)
         
-        # Create session in database
         db_session = db_ops.create_session(session_id)
         
-        # Save the first question to database
         db_question = db_ops.save_question(
             session_id=session_id,
             question_text=result.output.question or "Introduction",
@@ -114,7 +102,7 @@ async def interview(req: InterviewRequest, db = Depends(get_db)):
             "db_question_id": db_question.id
         }
         
-        print(f"💾 Session saved with {len(sessions)} total sessions")
+        print(f"Session saved with {len(sessions)} total sessions")
         return {
             "session_id": session_id, 
             "message": result.output.question or "Interview started",
@@ -122,66 +110,56 @@ async def interview(req: InterviewRequest, db = Depends(get_db)):
             "conversation_history": []
         }
     
-    # Continue existing session
     if req.session_id not in sessions:
         print(f"❌ Session not found: {req.session_id}")
         raise HTTPException(status_code=404, detail="Session not found")
     
-    print(f"📋 Continuing session: {req.session_id}")
+    print(f"Continuing session: {req.session_id}")
     session = sessions[req.session_id]
     state = session["state"]
-    print(f"📊 Current state - Answers: {len(state.user_answers)}, Feedback: {len(state.feedback_history)}")
+    print(f"Current state - Answers: {len(state.user_answers)}, Feedback: {len(state.feedback_history)}")
     
-    # If user provided input, add it as an answer and evaluate
     if req.user_input:
-        print(f"💬 User input received: {req.user_input[:50]}...")
+        print(f"User input received: {req.user_input[:50]}...")
         answer = Answer(req.user_input)
         state.user_answers.append(answer)
-        print(f"📝 Added answer. Total answers: {len(state.user_answers)}")
+        print(f"Added answer. Total answers: {len(state.user_answers)}")
         
-        # Get the current question from the session
         current_question = session.get("current_question")
         if not current_question:
-            print("❌ No current question found in session")
+            print("No current question found in session")
             raise HTTPException(status_code=400, detail="No current question found")
         
-        print(f"❓ Current question: {current_question.text[:50] if current_question.text else 'None'}...")
+        print(f"Current question: {current_question.text[:50] if current_question.text else 'None'}...")
         
-        # Evaluate the answer
-        print("🔍 Evaluating answer...")
+        print("Evaluating answer...")
         
-        # Get the evaluation result directly from the agent
         evaluation_input = f"Question: {current_question.text}\nAnswer: {answer.text}"
-        print(f"🔍 Evaluation input: {evaluation_input[:100]}...")
+        print(f"Evaluation input: {evaluation_input[:100]}...")
         
         evaluation_result = await evaluator_agent.run(
             evaluation_input,
-            message_history=[],  # Use empty history to avoid confusion
+            message_history=[],
         )
         state.history += evaluation_result.new_messages()
-        print(f"📊 Evaluation result: {evaluation_result.output}")
+        print(f"Evaluation result: {evaluation_result.output}")
         
-        # Save the structured evaluation data
         evaluation_data = evaluation_result.output
         feedback = Feedback(text=evaluation_data.comments)
         state.feedback_history.append(feedback)
         
-        # Store the full evaluation data for report generation
         if "evaluation_data" not in session:
             session["evaluation_data"] = []
         session["evaluation_data"].append(evaluation_data)
         
-        # Save to database
         db_ops = session.get("db_ops")
         if db_ops:
-            # Save answer to database
             db_answer = db_ops.save_answer(
                 session_id=req.session_id,
                 question_id=session.get("db_question_id"),
                 answer_text=answer.text
             )
             
-            # Save evaluation to database
             db_ops.save_evaluation(
                 session_id=req.session_id,
                 question_id=session.get("db_question_id"),
@@ -189,17 +167,13 @@ async def interview(req: InterviewRequest, db = Depends(get_db)):
                 evaluation=evaluation_data
             )
         
-        print(f"💾 Saved feedback. Total feedback: {len(state.feedback_history)}")
+        print(f"Saved feedback. Total feedback: {len(state.feedback_history)}")
         
-        # Let the interviewer decide when to finish based on the prompt logic
-        # No hard-coded limits - the interviewer will handle completion
         
-        # Ask next question
-        print("🤖 Asking next question...")
+        print("Asking next question...")
         next_result = await session["graph"].run(Interviewer(), state=state)
         session["last_output"] = next_result.output
         
-        # Extract the question from the response for compatibility
         if next_result.output.question:
             current_question = Question(text=next_result.output.question)
         else:
@@ -208,7 +182,6 @@ async def interview(req: InterviewRequest, db = Depends(get_db)):
         session["current_question"] = current_question
         session["questions"].append(next_result.output)
         
-        # Save next question to database
         if db_ops and next_result.output.question:
             db_question = db_ops.save_question(
                 session_id=req.session_id,
@@ -218,27 +191,23 @@ async def interview(req: InterviewRequest, db = Depends(get_db)):
             )
             session["db_question_id"] = db_question.id
         
-        print(f"✅ Next question: {next_result.output}")
+        print(f" Next question: {next_result.output}")
         
-        # Check if interviewer decided to finish using the finished flag
         if next_result.output.finished:
-            print("🏁 Interview completed by interviewer")
+            print(" Interview completed by interviewer")
             session["finished"] = True
             
-            # Generate comprehensive interview summary using evaluator
             evaluation_data = session.get("evaluation_data", [])
             if evaluation_data:
-                print("📊 Generating comprehensive interview summary...")
+                print(" Generating comprehensive interview summary...")
                 final_report = await generate_interview_summary(
                     session_id=req.session_id,
                     state=state,
                     evaluation_data=evaluation_data
                 )
                 
-                # Store the final report in session
                 session["final_report"] = final_report
                 
-                # Finish session in database
                 if db_ops:
                     avg_score = sum(eval_data.score for eval_data in evaluation_data) / len(evaluation_data)
                     db_ops.finish_session(
@@ -257,7 +226,7 @@ async def interview(req: InterviewRequest, db = Depends(get_db)):
                 ]
             }
         
-        print("🔄 Continuing interview...")
+        print(" Continuing interview...")
         return {
             "session_id": req.session_id,
             "message": next_result.output.question or "Next question",
@@ -281,20 +250,18 @@ async def interview(req: InterviewRequest, db = Depends(get_db)):
 
 @app.get("/report/{session_id}")
 async def get_pdf_report(session_id: str):
-    """Generate and download PDF interview report"""
-    print(f"📄 Generating PDF report for session: {session_id}")
+    print(f" Generating PDF report for session: {session_id}")
     
     if session_id not in sessions:
-        print(f"❌ Session not found: {session_id}")
+        print(f" Session not found: {session_id}")
         raise HTTPException(status_code=404, detail="Session not found")
 
     session = sessions[session_id]
     state = session["state"]
     stored_questions = session.get("questions", [])
     
-    print(f"📊 Report data - Questions: {len(stored_questions)}, Answers: {len(state.user_answers)}, Feedback: {len(state.feedback_history)}")
+    print(f" Report data - Questions: {len(stored_questions)}, Answers: {len(state.user_answers)}, Feedback: {len(state.feedback_history)}")
 
-    # Create transcript for PDF generation
     transcript = []
     
     for i, (question, answer, feedback) in enumerate(zip(
@@ -302,29 +269,23 @@ async def get_pdf_report(session_id: str):
         state.user_answers,
         state.feedback_history
     ), 1):
-        # Handle both Question and InterviewerResponse objects
         if hasattr(question, 'question'):
-            # InterviewerResponse object
             question_text = question.question if question.question else f"Question {i}"
-            print(f"📝 Processing Q&A pair {i}: {question_text[:30]}...")
+            print(f" Processing Q&A pair {i}: {question_text[:30]}...")
         else:
-            # Question object
             question_text = question.text if question else f"Question {i}"
-            print(f"📝 Processing Q&A pair {i}: {question_text[:30]}...")
+            print(f" Processing Q&A pair {i}: {question_text[:30]}...")
         
-        # Add question
         transcript.append({
             "kind": "question",
             "payload": question_text
         })
         
-        # Add answer
         transcript.append({
             "kind": "answer", 
             "payload": answer.text
         })
         
-        # Add evaluation/feedback using actual evaluation data
         evaluation_data = session.get("evaluation_data", [])
         if i <= len(evaluation_data):
             eval_data = evaluation_data[i-1]
@@ -337,7 +298,6 @@ async def get_pdf_report(session_id: str):
                 }
             })
         else:
-            # Fallback if evaluation data is missing
             transcript.append({
                 "kind": "evaluation",
                 "payload": {
@@ -355,9 +315,8 @@ async def get_pdf_report(session_id: str):
                 }
             })
 
-    # Create summary using actual evaluation data
     evaluation_data = session.get("evaluation_data", [])
-    print(f"📊 Evaluation data: {evaluation_data}")
+    print(f"Evaluation data: {evaluation_data}")
     if evaluation_data:
         avg_score = sum(eval_data.score for eval_data in evaluation_data) / len(evaluation_data)
         all_strengths = []
@@ -372,9 +331,8 @@ async def get_pdf_report(session_id: str):
             if eval_data.detailed_report and "recommendations" in eval_data.detailed_report:
                 all_recommendations.extend(eval_data.detailed_report["recommendations"])
         
-        # If no detailed reports were generated, create a fallback summary based on scores and comments
         if not all_strengths and not all_weaknesses and not all_recommendations:
-            print("📝 No detailed reports found, generating fallback summary...")
+            print(" No detailed reports found, generating fallback summary...")
             high_scores = [eval_data for eval_data in evaluation_data if eval_data.score >= 7]
             low_scores = [eval_data for eval_data in evaluation_data if eval_data.score < 6]
             
@@ -389,7 +347,6 @@ async def get_pdf_report(session_id: str):
                 "Consider advanced Excel training for complex data analysis"
             ]
         
-        # Create performance assessment
         if avg_score >= 8:
             performance_level = "Excellent"
             performance_desc = "Outstanding Excel proficiency with advanced understanding"
@@ -427,19 +384,17 @@ Interview Summary:
 - Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 """
 
-    print(f"📋 Created transcript with {len(transcript)} items")
-    
-    # Generate PDF
-    print("🔄 Generating PDF...")
-    # Get the final comprehensive report for PDF generation
+    print(f" Created transcript with {len(transcript)} items")
+    print(" Generating PDF...")
+
     final_report = session.get("final_report")
     if not final_report:
-        print("❌ No final report available for PDF generation")
+        print(" No final report available for PDF generation")
         raise HTTPException(status_code=400, detail="Final report not available")
     
-    print(f"📊 Using final report for PDF generation")
+    print(f"Using final report for PDF generation")
     
-    # Convert FinalReport object to dictionary for PDF generation
+
     final_report_dict = {
         "session_id": final_report.session_id,
         "total_questions": final_report.total_questions,
@@ -454,7 +409,7 @@ Interview Summary:
     }
     
     pdf_buffer = generate_pdf_bytes(session_id, final_report_dict)
-    print("✅ PDF generated successfully")
+    print(" PDF generated successfully")
     
     pdf_bytes = pdf_buffer.getvalue()
     
@@ -466,7 +421,6 @@ Interview Summary:
 
 @app.get("/transcript/{session_id}")
 async def get_transcript(session_id: str, db = Depends(get_db)):
-    """Get complete conversation transcript for a session"""
     db_ops = DatabaseOperations(db)
     transcript = db_ops.get_session_transcript(session_id)
     
@@ -474,7 +428,7 @@ async def get_transcript(session_id: str, db = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Session not found")
     
     return transcript
-    
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

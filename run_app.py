@@ -5,7 +5,6 @@ import signal
 
 
 def main():
-    print("Starting")
     backend_process = subprocess.Popen(
         ["uvicorn", "main:app", "--reload"],
         cwd="backend"

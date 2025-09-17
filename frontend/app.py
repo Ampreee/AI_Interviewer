@@ -9,13 +9,11 @@ st.set_page_config(page_title="AI Interviewer", page_icon="📊")
 st.title("📊 AI-Powered Interviewer")
 st.markdown("Get ready for an AI-powered interview experience!")
 
-# Initialize session state
 if "session_id" not in st.session_state:
     st.session_state.session_id = None
     st.session_state.finished = False
     st.session_state.current_message = ""
 
-# Helper function to make API calls
 def make_api_call(endpoint, data=None, method="POST"):
     try:
         if method.upper() == "GET":
@@ -30,7 +28,6 @@ def make_api_call(endpoint, data=None, method="POST"):
     except requests.exceptions.RequestException as e:
         return None, f"Connection Error: {str(e)}"
 
-# 🚀 Start new interview
 if st.session_state.session_id is None:
     st.markdown("### Welcome to the Excel Interview!")
     st.markdown("This AI-powered interviewer will ask you Excel-related questions to test your knowledge.")
@@ -50,22 +47,18 @@ if st.session_state.session_id is None:
                 st.rerun()
 
 else:
-    # Show interview status
     status = "✅ Complete" if st.session_state.finished else "🔄 In Progress"
     st.info(f"**Status:** {status}")
     st.markdown("---")
     
-    # Show current interviewer message
     if st.session_state.current_message:
         st.markdown("### 🤖 Interviewer's Question")
         st.info(st.session_state.current_message)
     
 
-    # If not finished, let user provide input
     if not st.session_state.finished:
         st.markdown("### 💬 Your Response")
         
-        # Initialize input key if not exists
         if "input_key" not in st.session_state:
             st.session_state.input_key = 0
         
@@ -93,7 +86,6 @@ else:
                     st.session_state.current_message = data["message"]
                     st.session_state.finished = data["finished"]
                     
-                    # Clear the input by incrementing the key
                     st.session_state.input_key += 1
                     st.rerun()
         elif submit_btn and not user_input.strip():
@@ -103,11 +95,9 @@ else:
         st.success("🎉 Interview Complete!")
         st.markdown("Thank you for participating in the Excel mock interview!")
         
-        # Show final summary
         st.markdown("### 📊 Interview Summary")
         st.markdown("Thank you for completing the Excel mock interview!")
         
-        # Report Section
         st.markdown("### 📄 Interview Reports")
         
         col1, col2, col3 = st.columns(3)
@@ -136,7 +126,6 @@ else:
                         response = requests.get(f"{BACKEND}/transcript/{st.session_state.session_id}")
                         if response.status_code == 200:
                             transcript_data = response.json()
-                            # Convert transcript to JSON string for download
                             transcript_json = json.dumps(transcript_data, indent=2)
                             st.download_button(
                                 "📥 Download Transcript",
@@ -151,7 +140,6 @@ else:
         
         with col3:
             if st.button("🔄 Start New Interview"):
-                # Reset session state
                 for key in ["session_id", "finished", "current_message"]:
                     if key in st.session_state:
                         del st.session_state[key]

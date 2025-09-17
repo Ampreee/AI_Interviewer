@@ -3,8 +3,6 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel
 from pydantic_ai.messages import ModelMessage
 
-
-# -------- Data Models --------
 @dataclass
 class Question:
     text: str
