@@ -11,7 +11,7 @@ class DatabaseOperations:
     def create_session(self, session_id: str) -> InterviewSession:
         session = InterviewSession(
             id=session_id,
-            created_at=datetime.now(datetime.timezone.utc),
+            created_at=datetime.now(),
             is_finished=False
         )
         self.db.add(session)
@@ -29,7 +29,7 @@ class DatabaseOperations:
             question_text=question_text,
             difficulty=difficulty,
             question_order=question_order,
-            created_at=datetime.now(datetime.timezone.utc)
+            created_at=datetime.now()
         )
         self.db.add(question)
         self.db.commit()
@@ -42,7 +42,7 @@ class DatabaseOperations:
             session_id=session_id,
             question_id=question_id,
             answer_text=answer_text,
-            created_at=datetime.now(datetime.timezone.utc)
+            created_at=datetime.now()
         )
         self.db.add(answer)
         self.db.commit()
@@ -58,7 +58,7 @@ class DatabaseOperations:
             score=evaluation.score,
             comments=evaluation.comments,
             detailed_report=evaluation.detailed_report,
-            created_at=datetime.now(datetime.timezone.utc)
+            created_at=datetime.now()
         )
         self.db.add(evaluation_record)
         self.db.commit()
@@ -70,7 +70,7 @@ class DatabaseOperations:
         session = self.get_session(session_id)
         if session:
             session.is_finished = True
-            session.finished_at = datetime.now(datetime.timezone.utc)
+            session.finished_at = datetime.now()
             session.total_questions = len(session.questions)
             if average_score is not None:
                 session.average_score = average_score

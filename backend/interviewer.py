@@ -9,7 +9,7 @@ load_dotenv()
 
 
 interviewer_agent = Agent(
-    "openai:gpt-4o-mini",
+    "openai:gpt-4o",
     output_type=InterviewerResponse,
     system_prompt=interviewer_prompt
 )
@@ -22,7 +22,7 @@ class Interviewer(BaseNode[State]):
         print(f"Interviewer.run() called - Answers: {len(ctx.state.user_answers)}, Feedback: {len(ctx.state.feedback_history)}")
         
         if len(ctx.state.user_answers) == 0:
-            context_message = "Start the interview with an introduction. Introduce yourself as Dhruv, an AI interviewer specializing in Excel, explain the interview process, and ask your first Excel question."
+            context_message = "This is Phase 1 - INTRODUCTION. Provide a warm introduction as Dhruv, explain the interview process, mention the final report, and end with 'Ready to get started?' Do NOT ask any Excel questions yet. This is just the introduction phase."
             print("First question - sending introduction context")
         else:
             context_message = f"Continue the interview conversation. You have {len(ctx.state.user_answers)} previous answers from the candidate."

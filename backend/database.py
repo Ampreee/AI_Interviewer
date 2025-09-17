@@ -13,7 +13,7 @@ class InterviewSession(Base):
     __tablename__ = "interview_sessions"
     
     id = Column(String, primary_key=True, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now())
     finished_at = Column(DateTime, nullable=True)
     is_finished = Column(Boolean, default=False)
     total_questions = Column(Integer, default=0)
@@ -32,7 +32,7 @@ class Question(Base):
     question_text = Column(Text, nullable=False)
     difficulty = Column(String, nullable=True)
     question_order = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now())
     
     session = relationship("InterviewSession", back_populates="questions")
     answers = relationship("Answer", back_populates="question")
@@ -45,7 +45,7 @@ class Answer(Base):
     session_id = Column(String, ForeignKey("interview_sessions.id"))
     question_id = Column(Integer, ForeignKey("questions.id"))
     answer_text = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now())
     
     session = relationship("InterviewSession", back_populates="answers")
     question = relationship("Question", back_populates="answers")
@@ -61,7 +61,7 @@ class Evaluation(Base):
     score = Column(Integer, nullable=False)
     comments = Column(Text, nullable=False)
     detailed_report = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now())
     
     session = relationship("InterviewSession", back_populates="evaluations")
     question = relationship("Question", back_populates="evaluations")
