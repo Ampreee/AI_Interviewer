@@ -1,8 +1,8 @@
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
-from .database import InterviewSession, Question, Answer, Evaluation
-from .models import EvaluationResponse
+from database import InterviewSession, Question, Answer, Evaluation
+from models import EvaluationResponse
 
 class DatabaseOperations:
     def __init__(self, db: Session):

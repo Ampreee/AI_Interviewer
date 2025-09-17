@@ -2,8 +2,8 @@ from __future__ import annotations as _annotations
 from dataclasses import dataclass
 from pydantic_ai import Agent
 from pydantic_graph import BaseNode, GraphRunContext, End
-from .models import State, InterviewerResponse
-from .prompt import interviewer_prompt
+from models import State, InterviewerResponse
+from prompt import interviewer_prompt
 from dotenv import load_dotenv
 load_dotenv()
 

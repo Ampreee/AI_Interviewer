@@ -2,8 +2,8 @@ from __future__ import annotations as _annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 from pydantic_ai import Agent
-from .models import State, EvaluationResponse, FinalReport
-from .prompt import evaluator_prompt, final_report_prompt
+from models import State, EvaluationResponse, FinalReport
+from prompt import evaluator_prompt, final_report_prompt
 from dotenv import load_dotenv
 load_dotenv()
 

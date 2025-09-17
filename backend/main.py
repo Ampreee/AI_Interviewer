@@ -5,12 +5,12 @@ from pydantic_graph import Graph
 from contextlib import asynccontextmanager
 import uuid
 from datetime import datetime
-from .interviewer import Interviewer
-from .evaluator import evaluator_agent, generate_interview_summary
-from .models import State, Answer, Feedback,  Question
-from .pdf_gen import generate_pdf_bytes
-from .database import get_db, init_database
-from .db_operations import DatabaseOperations
+from interviewer import Interviewer
+from evaluator import evaluator_agent, generate_interview_summary
+from models import State, Answer, Feedback,  Question
+from pdf_gen import generate_pdf_bytes
+from database import get_db, init_database
+from db_operations import DatabaseOperations
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
